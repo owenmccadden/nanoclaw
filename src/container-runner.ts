@@ -148,13 +148,23 @@ function buildVolumeMounts(
     readonly: false,
   });
 
-  // Gmail MCP credentials (shared across all groups — single agent identity)
-  const gmailDir = path.join(homeDir, '.gmail-mcp');
-  if (fs.existsSync(gmailDir)) {
+  // gog CLI config (Google Calendar, Drive, Contacts, etc.)
+  const gogDir = path.join(homeDir, '.config', 'gogcli');
+  if (fs.existsSync(gogDir)) {
     mounts.push({
-      hostPath: gmailDir,
-      containerPath: '/home/node/.gmail-mcp',
-      readonly: false, // MCP needs write access to refresh tokens
+      hostPath: gogDir,
+      containerPath: '/home/node/.config/gogcli',
+      readonly: false, // needs write access to refresh tokens
+    });
+  }
+
+  // gog binary
+  const gogBin = path.join(homeDir, '.local', 'bin', 'gog');
+  if (fs.existsSync(gogBin)) {
+    mounts.push({
+      hostPath: gogBin,
+      containerPath: '/usr/local/bin/gog',
+      readonly: true,
     });
   }
 
@@ -197,7 +207,7 @@ function buildVolumeMounts(
  * Secrets are never written to disk or mounted as files.
  */
 function readSecrets(): Record<string, string> {
-  return readEnvFile(['CLAUDE_CODE_OAUTH_TOKEN', 'ANTHROPIC_API_KEY']);
+  return readEnvFile(['CLAUDE_CODE_OAUTH_TOKEN', 'ANTHROPIC_API_KEY', 'GOG_KEYRING_PASSWORD', 'GOG_ACCOUNT']);
 }
 
 function buildContainerArgs(mounts: VolumeMount[], containerName: string): string[] {

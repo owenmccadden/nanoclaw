@@ -1,6 +1,28 @@
 import { Bot } from 'grammy';
 
 import { ASSISTANT_NAME, TRIGGER_PATTERN } from '../config.js';
+
+function makeResetSplash(): string {
+  const inner = 29;
+  const label = 'CONTEXT CLEARED';
+  const pad = Math.floor((inner - label.length) / 2);
+  const top   = '╔' + '═'.repeat(inner + 2) + '╗';
+  const bottom = '╚' + '═'.repeat(inner + 2) + '╝';
+  const empty  = '║ ' + ' '.repeat(inner) + ' ║';
+  const mid    = '║ ' + ' '.repeat(pad) + label + ' '.repeat(inner - pad - label.length) + ' ║';
+
+  const totalRows = 30;
+  const innerRows = totalRows - 2;
+  const midRow = Math.floor(innerRows / 2);
+
+  const lines = [top];
+  for (let i = 0; i < innerRows; i++) lines.push(i === midRow ? mid : empty);
+  lines.push(bottom);
+
+  return `<pre>${lines.join('\n')}</pre>`;
+}
+
+const RESET_SPLASH = makeResetSplash();
 import { logger } from '../logger.js';
 import {
   Channel,
@@ -13,6 +35,7 @@ export interface TelegramChannelOpts {
   onMessage: OnInboundMessage;
   onChatMetadata: OnChatMetadata;
   registeredGroups: () => Record<string, RegisteredGroup>;
+  onReset?: (groupFolder: string, chatJid: string) => void;
 }
 
 export class TelegramChannel implements Channel {
@@ -48,6 +71,18 @@ export class TelegramChannel implements Channel {
     // Command to check bot status
     this.bot.command('ping', (ctx) => {
       ctx.reply(`${ASSISTANT_NAME} is online.`);
+    });
+
+    // Command to clear conversation context (session)
+    this.bot.command('reset', (ctx) => {
+      const chatJid = `tg:${ctx.chat.id}`;
+      const group = this.opts.registeredGroups()[chatJid];
+      if (!group) {
+        ctx.reply('This chat is not registered.');
+        return;
+      }
+      this.opts.onReset?.(group.folder, chatJid);
+      ctx.reply(RESET_SPLASH, { parse_mode: 'HTML' });
     });
 
     this.bot.on('message:text', async (ctx) => {

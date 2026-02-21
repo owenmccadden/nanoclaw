@@ -22,6 +22,7 @@ import {
 } from './container-runner.js';
 import { cleanupOrphans, ensureContainerRuntimeRunning } from './container-runtime.js';
 import {
+  deleteSession,
   getAllChats,
   getAllRegisteredGroups,
   getAllSessions,
@@ -491,7 +492,15 @@ async function main(): Promise<void> {
   }
 
   if (TELEGRAM_BOT_TOKEN) {
-    const telegram = new TelegramChannel(TELEGRAM_BOT_TOKEN, channelOpts);
+    const telegram = new TelegramChannel(TELEGRAM_BOT_TOKEN, {
+      ...channelOpts,
+      onReset: (groupFolder: string, chatJid: string) => {
+        delete sessions[groupFolder];
+        deleteSession(groupFolder);
+        queue.closeStdin(chatJid);
+        logger.info({ groupFolder, chatJid }, 'Session reset via /reset command');
+      },
+    });
     channels.push(telegram);
     await telegram.connect();
   }

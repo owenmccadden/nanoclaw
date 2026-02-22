@@ -427,6 +427,8 @@ curl -s -H "Host: <appname>.home" http://localhost/ | head -3
 
 The app is now live at `http://<appname>.home` from any device on the tailnet.
 
+**If NanoClaw agents need to reach this app** (e.g., via curl from a container): persist the port by adding it to `/etc/systemd/system/docker-host-access.service` (existing service that runs iptables rules on boot). Containers resolve `<appname>.home` via `--add-host` in `container-runner.ts` — add a line there for the new hostname. The container skill should reference `http://<appname>.home:<PORT>` (not port 80, since nginx isn't on the Docker bridge).
+
 **To remove an app:**
 ```bash
 sudo rm /etc/nginx/sites-enabled/<appname>.home
@@ -439,6 +441,7 @@ sudo nginx -t && sudo systemctl reload nginx
 |-----|------|---------|
 | http://todo.home | 4321 | todo |
 | http://planning.home | 3456 | planning |
+| http://meals.home | 5678 | meals |
 
 ---
 

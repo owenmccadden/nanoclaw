@@ -223,6 +223,9 @@ function buildContainerArgs(mounts: VolumeMount[], containerName: string): strin
     args.push('-e', 'HOME=/home/node');
   }
 
+  // Map *.home hostnames so containers can reach tailnet services (meals.home, etc.)
+  args.push('--add-host', 'meals.home:host-gateway');
+
   for (const mount of mounts) {
     if (mount.readonly) {
       args.push(...readonlyMountArgs(mount.hostPath, mount.containerPath));
